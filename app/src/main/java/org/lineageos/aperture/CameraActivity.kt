@@ -887,7 +887,8 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         }
 
         launch {
-            viewModel.screenRotation.collectLatest { screenRotation ->
+            viewModel.screenRotation.collectLatest { deviceRotation ->
+                val screenRotation = uiRotation(deviceRotation)
                 val compensationValue = screenRotation.compensationValue.toFloat()
 
                 // Rotate sliders
@@ -2083,5 +2084,18 @@ open class CameraActivity : AppCompatActivity(R.layout.activity_camera) {
         private const val SINGLE_CAPTURE_INLINE_MAX_SIDE_LEN_PIXELS = 256
 
         private val EXPOSURE_LEVEL_FORMATTER = DecimalFormat("+#;-#")
+    }
+
+    /**
+     * The [Rotation] the UI still has to compensate for. [deviceRotation] is
+     * relative to the natural orientation, but on large screens the system can
+     * ignore our nosensor orientation request and rotate the activity itself
+     * (e.g. a tablet whose natural orientation is portrait, used in landscape),
+     * so take the current display rotation out of it.
+     */
+    private fun uiRotation(deviceRotation: Rotation): Rotation {
+        val displayDegrees = (display?.rotation ?: 0) * 90
+        val degrees = (deviceRotation.offset + displayDegrees) % 360
+        return Rotation.entries.first { it.offset == degrees }
     }
 }
